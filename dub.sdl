@@ -1,0 +1,7 @@
+name "codewrite"
+description "A simple ASM to Gecko code editor with  built-in code manager."
+copyright "Copyright © 2015, codeThaumaturge"
+authors "codeThaumaturge"
+dependency "tkd" version="~>1.1.4"
+sourceFiles "source/icon.res" "source/noconsole.def" platform="windows"
+dflags "-Jsource/"
