@@ -326,7 +326,9 @@ class Application : TkdApplication {
 
     auto decompiled = command.output.replace("\t", " ").lineSplitter.map!(x => x[20..$]).join("\n");
 
-    if (decompiled.endsWith(".word 0x00000000")) decompiled = decompiled[0..$-16];
+    //remove trailing 0 data and/or nop
+    if (decompiled.endsWith(".word 0x00000000")) decompiled = decompiled[0..$-21];
+    else decompiled = decompiled[0..$-4];
 
     if (offset == 0) {
       addressEntry.setValue("N/A");
