@@ -25,8 +25,7 @@ class Application : TkdApplication {
               .bind("<Control-n>", &newFile)
               .bind("<Control-Shift-s>", &saveAs)
               .setProtocolCommand(WindowProtocol.deleteWindow, (args) {
-                if (!confirmDiscard(args)) return;
-                this.exit();
+                if (confirmDiscard(args)) this.exit();
               });
 
     ////
@@ -167,15 +166,17 @@ class Application : TkdApplication {
 
   void writeOutASM() {
     auto asmText = (asmBox.getText)[0..$-1];  //chop off trailing newline from Text widget
+    lastASM = asmText;
+
     auto address = addressEntry.getValue;
     auto re = ctRegex!("([a-f,A-F,0-9]{8})$");
+
     if (!matchFirst(address, re).empty) {
       asmText = "#To be inserted at " ~ address ~ "\n" ~ asmText;
     }
 
     std.file.write(currentFile, asmText);
 
-    lastASM = asmText;
   }
 
   void about(CommandArgs args) {
@@ -236,7 +237,7 @@ class Application : TkdApplication {
     auto data = cast(ubyte[]) std.file.read("a.out");
     data = data[52..data.countUntil([0x00, 0x2E, 0x73, 0x79, 0x6D, 0x74, 0x61, 0x62])];
 
-    auto numLines = (data.length % 8 == 0) ? (data.length/8) : (data.length/8+1);
+    auto numLines = data.length/8+1;
 
     ////
     //Output formatted code to text box
@@ -259,13 +260,10 @@ class Application : TkdApplication {
       counter++;
     }
 
-    while (counter < numLines*8) {
-      if (counter % 4 == 0) code.put(" ");
-      code.put("00");
-      counter++;
+    if (counter % 8 == 4) {
+      code.put(" 60000000");
     }
-
-    if (code.data[$-8..$] != "00000000") {
+    else {
       code.put("\n60000000 00000000");
     }
 
@@ -359,6 +357,7 @@ class Application : TkdApplication {
       if (fix) {
         fixed.put(line.until(' ', OpenRight.no));
 
+        //make negative jumps look like negative numbers instead of like 0xFFFFFFFX
         if (fixedLoc < 0) {
           fixed.put('-');
           fixed.put("0x");
