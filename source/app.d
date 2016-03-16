@@ -261,7 +261,7 @@ class Application : TkdApplication {
     }
 
     if (counter % 8 == 4) {
-      code.put(" 60000000");
+      code.put(" 00000000");
     }
     else {
       code.put("\n60000000 00000000");
@@ -326,9 +326,9 @@ class Application : TkdApplication {
 
     auto decompiled = command.output.replace("\t", " ").lineSplitter.map!(x => x[20..$]).join("\n");
 
-    //remove trailing 0 data and/or nop
-    if (decompiled.endsWith(".word 0x00000000")) decompiled = decompiled[0..$-21];
-    else decompiled = decompiled[0..$-4];
+    //remove trailing 0 data
+    if (decompiled.endsWith(".word 0x00000000")) decompiled = decompiled[0..$-17];
+    if (decompiled.endsWith("nop ")) decompiled = decompiled[0..$-5];
 
     if (offset == 0) {
       addressEntry.setValue("N/A");
