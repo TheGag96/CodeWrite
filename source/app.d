@@ -338,7 +338,7 @@ class Application : TkdApplication {
     }
     
     ////
-    //Fix output
+    //Fix and prettify output
     ////
     auto fixed = appender!(string[]);
     bool[uint] labelTable = [0 : true];
@@ -350,14 +350,20 @@ class Application : TkdApplication {
       bool madeFix = false;
 
       try {
+        //branch instructions get a label made for their jump location
         if (line.startsWith('b')) {
           string opcode = line[0..line.countUntil(' ')];
 
           uint jumpLocation = line[opcode.length+3 .. $].to!int(16);
 
           if (jumpLocation > codeSize) {
-            if (opcode.endsWith('a')) fixed.put(format("  %s 0x%X\n", opcode, jumpLocation));
-            else                      fixed.put(format("  %s 0x%X\n", opcode, jumpLocation-pos)); 
+            //check for absolute branches
+            if (opcode.endsWith('a') || opcode.endsWith("a+") || opcode.endsWith("a-")) {
+              fixed.put(format("  %s 0x%X\n", opcode, jumpLocation));
+            }
+            else {
+              fixed.put(format("  %s 0x%X\n", opcode, jumpLocation-pos)); 
+            }
           }
           else {
             labelTable[jumpLocation] = true;
@@ -367,6 +373,8 @@ class Application : TkdApplication {
           madeFix = true;
         }
         else if (IMMEDIATES.canFind(line[0..line.countUntil(' ')])) {
+          //convert most immediate values to hex
+
           string unedited = line[0..line.lastIndexOf(',')+1];
           int value = line[unedited.length..$].to!int & 0xFFFF;
 
