@@ -351,14 +351,17 @@ class Application : TkdApplication {
 
       try {
         if (line.startsWith('b')) {
-          uint jumpLocation = line[line.countUntil(' ')+3 .. $].to!int(16);
+          string opcode = line[0..line.countUntil(' ')];
+
+          uint jumpLocation = line[opcode.length+3 .. $].to!int(16);
 
           if (jumpLocation > codeSize) {
-            fixed.put(format("  %s0x%X\n", line.until(' ', OpenRight.no), jumpLocation-pos));
+            if (opcode.endsWith('a')) fixed.put(format("  %s 0x%X\n", opcode, jumpLocation));
+            else                      fixed.put(format("  %s 0x%X\n", opcode, jumpLocation-pos)); 
           }
           else {
             labelTable[jumpLocation] = true;
-            fixed.put(format("  %sloc_0x%X\n", line.until(' ', OpenRight.no), jumpLocation));
+            fixed.put(format("  %s loc_0x%X\n", opcode, jumpLocation));
           }
 
           madeFix = true;
