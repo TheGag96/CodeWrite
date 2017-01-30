@@ -109,7 +109,7 @@ class Application : TkdApplication {
       auto openedText = readText(currentFile);
 
       auto firstLine = openedText.until("\n").to!string;
-      auto re = ctRegex!("#To be inserted at ([a-f,A-F,0-9]{8})$");
+      auto re = ctRegex!(`#To be inserted at ([a-f,A-F,0-9]{8})(\r)?$`);
       auto result = matchFirst(firstLine, re);
       if (!result.empty) {
         addressEntry.setValue(result.hit[$-8..$]);
@@ -197,7 +197,7 @@ class Application : TkdApplication {
     ////
     //Preprocess code string to remove ; comments
     ////
-    auto re = regex(r";.*$", "gm");
+    auto re = regex(r";.*$", "gm"); //" fix shitty sublime parsing
     string assembly = replaceAll(asmBox.getText, re, "");
 
     ////
@@ -278,7 +278,7 @@ class Application : TkdApplication {
     //Process code
     ////
     ubyte[] bytes;
-    auto pureCode = codeBox.getText.replace(" ", "").replace("\n", "").toUpper;    
+    auto pureCode = codeBox.getText.replace(" ", "").replace("\n", "").replace("*", "").toUpper;    
     uint offset;
 
     try {
@@ -340,48 +340,56 @@ class Application : TkdApplication {
     ////
     //Fix absolute branches to relative ones
     ////
-    auto fixed = appender!string;
-    int pos = 0;
+    auto fixed = appender!(string[]);
+    bool[uint] labelTable = [0 : true];
+    static immutable IMMEDIATES = ["li", "lis", "ori", "addi", "cmpwi", "subi"];
 
     foreach (line; decompiled.lineSplitter) {
-      int fixedLoc;
-      bool fix = false;
+      bool madeFix = false;
 
       try {
         if (line.startsWith('b')) {
-          fixedLoc = line[line.countUntil(' ')+3 .. $].to!int(16) - pos;
-          fix = true;
+          uint jumpLocation = line[line.countUntil(' ')+3 .. $].to!int(16);
+          labelTable[jumpLocation] = true;
+          fixed.put(format("  %sloc_0x%X\n", line.until(' ', OpenRight.no), jumpLocation));
+          madeFix = true;
+        }
+        else if (IMMEDIATES.canFind(line[0..line.countUntil(' ')])) {
+          string unedited = line[0..line.lastIndexOf(',')+1];
+          int value = line[unedited.length..$].to!int & 0xFFFF;
+
+          fixed.put(format("  %s0x%X\n", unedited, value));
+          madeFix = true;
         }
       }
       catch (ConvException e) { /* Sometimes just starting with "b" doesn't mean it's an immediate branch lel */ }
       catch (core.exception.RangeError e) { }
-
-      if (fix) {
-        fixed.put(line.until(' ', OpenRight.no));
-
-        //make negative jumps look like negative numbers instead of like 0xFFFFFFFX
-        if (fixedLoc < 0) {
-          fixed.put('-');
-          fixed.put("0x");
-          fixed.put((-fixedLoc).to!string(16));
-        }
-        else {
-          fixed.put("0x");
-          fixed.put(fixedLoc.to!string(16));
-        }
-
-        fixed.put("\n");
+      
+      if (!madeFix) {
+        fixed.put(format("  %s\n", line));
       }
-      else {
-        fixed.put(line);
-        fixed.put("\n");
-      }
-
-      pos += 4;
     }
 
     asmBox.clear();
-    asmBox.insertText(1, 0, fixed.data);
+
+    uint pos     = 0;
+    uint lineNum = 1;
+    foreach (line; fixed.data) {
+      if (pos in labelTable) {
+        if (pos != 0) {
+          asmBox.insertText(lineNum, 0, "\n");
+          lineNum++;
+        }
+
+        asmBox.insertText(lineNum, 0, format("loc_0x%X:\n", pos));
+        lineNum++;
+      }
+
+      asmBox.insertText(lineNum, 0, line.replace(",", ", "));
+      
+      pos += 4;
+      lineNum++;
+    }
   }
 
   void errorNotice(string message) {
