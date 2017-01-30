@@ -2,7 +2,7 @@ import tkd.tkdapplication;
 import std.stdio, std.file, std.process, std.array, std.conv, std.string, std.regex,
        std.algorithm, std.range;
 
-enum VERSION = "1.0";
+enum VERSION = "1.0.3";
 
 class Application : TkdApplication {
   Text asmBox;
@@ -342,7 +342,7 @@ class Application : TkdApplication {
     ////
     auto fixed = appender!(string[]);
     bool[uint] labelTable = [0 : true];
-    static immutable IMMEDIATES = ["li", "lis", "ori", "addi", "cmpwi", "subi"];
+    static immutable IMMEDIATES = ["li", "lis", "ori", "addi", "cmpwi", "subi", "andi.", "andis.", "cmpli", "mulli", "oris"];
 
     foreach (line; decompiled.lineSplitter) {
       bool madeFix = false;
