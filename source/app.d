@@ -338,11 +338,13 @@ class Application : TkdApplication {
     }
     
     ////
-    //Fix absolute branches to relative ones
+    //Fix output
     ////
     auto fixed = appender!(string[]);
     bool[uint] labelTable = [0 : true];
+    uint codeSize = 4 * (decompiled.count("\n")+1);
     static immutable IMMEDIATES = ["li", "lis", "ori", "addi", "cmpwi", "subi", "andi.", "andis.", "cmpli", "mulli", "oris"];
+    uint pos = 0;
 
     foreach (line; decompiled.lineSplitter) {
       bool madeFix = false;
@@ -350,8 +352,15 @@ class Application : TkdApplication {
       try {
         if (line.startsWith('b')) {
           uint jumpLocation = line[line.countUntil(' ')+3 .. $].to!int(16);
-          labelTable[jumpLocation] = true;
-          fixed.put(format("  %sloc_0x%X\n", line.until(' ', OpenRight.no), jumpLocation));
+
+          if (jumpLocation > codeSize) {
+            fixed.put(format("  %s0x%X\n", line.until(' ', OpenRight.no), jumpLocation-pos));
+          }
+          else {
+            labelTable[jumpLocation] = true;
+            fixed.put(format("  %sloc_0x%X\n", line.until(' ', OpenRight.no), jumpLocation));
+          }
+
           madeFix = true;
         }
         else if (IMMEDIATES.canFind(line[0..line.countUntil(' ')])) {
@@ -368,11 +377,13 @@ class Application : TkdApplication {
       if (!madeFix) {
         fixed.put(format("  %s\n", line));
       }
+
+      pos += 4;
     }
 
     asmBox.clear();
 
-    uint pos     = 0;
+    pos = 0;
     uint lineNum = 1;
     foreach (line; fixed.data) {
       if (pos in labelTable) {
