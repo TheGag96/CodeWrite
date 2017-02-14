@@ -278,7 +278,7 @@ class Application : TkdApplication {
     //Process code
     ////
     ubyte[] bytes;
-    auto pureCode = codeBox.getText.replace(" ", "").replace("\n", "").replace("*", "").toUpper;    
+    auto pureCode = codeBox.getText.removechars("* \n").toUpper;    
     uint offset;
 
     try {
@@ -411,6 +411,11 @@ class Application : TkdApplication {
       
       pos += 4;
       lineNum++;
+    }
+
+    //make label after last line if a branch skips past everything
+    if (pos in labelTable) {
+      asmBox.insertText(lineNum, 0, format("\nloc_0x%X:\n", pos));
     }
   }
 
