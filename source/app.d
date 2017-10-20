@@ -2,7 +2,7 @@ import tkd.tkdapplication;
 import std.stdio, std.file, std.process, std.array, std.conv, std.string, std.regex,
        std.algorithm, std.range;
 
-enum VERSION = "1.0.3";
+enum VERSION = "1.0.4";
 
 class Application : TkdApplication {
   Text asmBox;
@@ -354,15 +354,16 @@ class Application : TkdApplication {
         if (line.startsWith('b')) {
           string opcode = line[0..line.countUntil(' ')];
 
-          uint jumpLocation = line[opcode.length+3 .. $].to!int(16);
+          int jumpLocation = cast(int) (line[opcode.length+3 .. $].to!uint(16));
 
-          if (jumpLocation > codeSize) {
+          if (jumpLocation > codeSize || jumpLocation < 0) {
             //check for absolute branches
             if (opcode.endsWith('a') || opcode.endsWith("a+") || opcode.endsWith("a-")) {
-              fixed.put(format("  %s 0x%X\n", opcode, jumpLocation));
+              fixed.put(format("  %s 0x%X\n", opcode, cast(uint)jumpLocation));
             }
             else {
-              fixed.put(format("  %s 0x%X\n", opcode, jumpLocation-pos)); 
+              if (jumpLocation >= 0) fixed.put(format("  %s 0x%X\n", opcode, jumpLocation-pos)); 
+              else                   fixed.put(format("  %s -0x%X\n", opcode, -jumpLocation+pos)); 
             }
           }
           else {
