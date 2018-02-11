@@ -1,7 +1,7 @@
 # CodeWrite
 A clone/alternative to ASMWiiRd.
 
-![Screenshot](http://i.imgur.com/1FW9W73.png)
+![Screenshot](https://i.imgur.com/hDaJVYU.png)
 
 Advantages over ASMWiiRd:
 * Disassembling creates labels in places that are branched to 
