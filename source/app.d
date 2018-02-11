@@ -1,8 +1,9 @@
 import tkd.tkdapplication;
 import std.stdio, std.file, std.process, std.array, std.conv, std.string, std.regex,
        std.algorithm, std.range;
+import core.exception;
 
-enum VERSION = "1.0.4";
+enum VERSION = "1.0.5";
 
 class Application : TkdApplication {
   Text asmBox;
@@ -203,7 +204,7 @@ class Application : TkdApplication {
     ////
     //Check validity of start address
     ////
-    bool codeIsExecute = (addressEntry.getValue.toUpper == "N/A");
+    bool codeIsExecute = (addressEntry.getValue.strip == "" || addressEntry.getValue.strip.toUpper == "N/A");
     uint startAddress;
 
     writeln(codeIsExecute);
@@ -278,7 +279,8 @@ class Application : TkdApplication {
     //Process code
     ////
     ubyte[] bytes;
-    auto pureCode = codeBox.getText.removechars("* \n").toUpper;    
+    auto re = ctRegex!r"\*+|\s+";
+    auto pureCode = codeBox.getText.replaceAll(re, "").toUpper;    
     uint offset;
 
     try {
@@ -342,7 +344,7 @@ class Application : TkdApplication {
     ////
     auto fixed = appender!(string[]);
     bool[uint] labelTable = [0 : true];
-    uint codeSize = 4 * (decompiled.count("\n")+1);
+    uint codeSize = 4 * (cast(uint)decompiled.count("\n")+1);
     static immutable IMMEDIATES = ["li", "lis", "ori", "addi", "cmpwi", "subi", "andi.", "andis.", "cmpli", "mulli", "oris"];
     uint pos = 0;
 
@@ -384,7 +386,7 @@ class Application : TkdApplication {
         }
       }
       catch (ConvException e) { /* Sometimes just starting with "b" doesn't mean it's an immediate branch lel */ }
-      catch (core.exception.RangeError e) { }
+      catch (RangeError e) { }
       
       if (!madeFix) {
         fixed.put(format("  %s\n", line));

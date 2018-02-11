@@ -5,3 +5,10 @@ authors "codeThaumaturge"
 dependency "tkd" version="~>1.1.4"
 sourceFiles "source/icon.res" "source/noconsole.def" platform="windows"
 dflags "-Jsource/" "-boundscheck=on"
+buildType "debug" {
+  versions "Debug" build="debug"
+}
+buildType "release" {
+  versions "Release" build="release"
+  buildOptions "optimize" "inline"
+}
