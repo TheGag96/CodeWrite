@@ -3,7 +3,7 @@ import std.stdio, std.file, std.process, std.array, std.conv, std.string, std.re
        std.algorithm, std.range;
 import core.exception;
 
-enum VERSION = "1.0.5";
+enum VERSION = "1.0.6";
 
 class Application : TkdApplication {
   Text asmBox;
