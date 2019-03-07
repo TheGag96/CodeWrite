@@ -207,8 +207,6 @@ class Application : TkdApplication {
     bool codeIsExecute = (addressEntry.getValue.strip == "" || addressEntry.getValue.strip.toUpper == "N/A");
     uint startAddress;
 
-    writeln(codeIsExecute);
-
     if (!codeIsExecute) {
       try {
         startAddress = addressEntry.getValue.to!uint(16);
@@ -356,21 +354,24 @@ class Application : TkdApplication {
         if (line.startsWith('b')) {
           string opcode = line[0..line.countUntil(' ')];
 
-          int jumpLocation = cast(int) (line[opcode.length+3 .. $].to!uint(16));
+          //some branches look like bne- cr3,somewhere. so, we gotta handle them
+          auto branchArgs = line[opcode.length+1..$].findSplitAfter(",");
+
+          int jumpLocation = cast(int) (branchArgs[1][2..$].to!uint(16));
 
           if (jumpLocation > codeSize || jumpLocation < 0) {
             //check for absolute branches
             if (opcode.endsWith('a') || opcode.endsWith("a+") || opcode.endsWith("a-")) {
-              fixed.put(format("  %s 0x%X\n", opcode, cast(uint)jumpLocation));
+              fixed.put(format("  %s %s0x%X\n", opcode, branchArgs[0], cast(uint)jumpLocation));
             }
             else {
-              if (jumpLocation >= 0) fixed.put(format("  %s 0x%X\n", opcode, jumpLocation-pos)); 
-              else                   fixed.put(format("  %s -0x%X\n", opcode, -jumpLocation+pos)); 
+              if (jumpLocation >= 0) fixed.put(format("  %s %s0x%X\n",  opcode, branchArgs[0],  jumpLocation-pos)); 
+              else                   fixed.put(format("  %s %s-0x%X\n", opcode, branchArgs[0], -jumpLocation+pos)); 
             }
           }
           else {
             labelTable[jumpLocation] = true;
-            fixed.put(format("  %s loc_0x%X\n", opcode, jumpLocation));
+            fixed.put(format("  %s %sloc_0x%X\n", opcode, branchArgs[0], jumpLocation));
           }
 
           madeFix = true;
